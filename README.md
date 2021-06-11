@@ -17,6 +17,19 @@ There are different setup options:
 - Running Kafka Cluster & Kafka Connect (Optional - just required if
     the generalized data should be proceed into a database)
 
+### Setup
+<!-- TODO -->
+
+## Output
+- `source` - where does the data comes from
+- `type` - positive / negative / neutral
+- `header` - short header of review [`default: ""`]
+- `body` - body of review
+- `is_streaming` - boolean for logical purposes inside of Kafka
+
+## Sources
+- [Amazon Review Dataset](https://drive.google.com/drive/folders/0Bz8a_Dbh9Qhbfll6bVpmNUtUcFdjYmF2SEpmZUZUcVNiMUw1TWN6RDV3a0JHT3kxLVhVR2M?resourcekey=0-TLwzfR2O-D2aPitmn5o9VQ)
+
 ## Workflow
 ETL Flow will happens in two steps:
 1. Load Source data, bring them into a specific CSV format
