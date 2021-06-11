@@ -5,8 +5,9 @@ description = "Project to unify different sources in one output"
 authors = ["JangasCodingplace <janisgoesser92@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.7.1"
 python-dotenv = "^0.17.1"
+pandas = "^1.2.4"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.2"
