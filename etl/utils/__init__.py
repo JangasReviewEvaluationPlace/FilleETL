@@ -1,5 +1,6 @@
-from .etl import BaseETL
+from .etl import BaseETL, GenericETLLoggingDecorators
 
 __all__ = (
     'BaseETL',
+    'GenericETLLoggingDecorators'
 )

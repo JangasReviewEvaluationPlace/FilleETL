@@ -1,5 +1,6 @@
+import logging
 import os
-from abc import ABC, abstractclassmethod, abstractproperty
+from abc import ABC, abstractmethod, abstractproperty
 
 
 class BaseETL(ABC):
@@ -25,14 +26,29 @@ class BaseETL(ABC):
     def file_dir(self):
         pass
 
-    @abstractclassmethod
-    def _load(cls, is_dummy: bool):
+    @abstractmethod
+    def _load(self, is_dummy: bool):
         pass
 
-    @abstractclassmethod
-    def _extract(cls):
+    @abstractmethod
+    def _extract(self):
         pass
 
-    @abstractclassmethod
-    def _transform(cls):
+    @abstractmethod
+    def _transform(self):
         pass
+
+
+class GenericETLLoggingDecorators:
+    @staticmethod
+    def load(data_variable_name: str = "dataframe"):
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                logging.info("Start Loading Data into ETL")
+                func(*args, **kwargs)
+                number_of_loaded_df = len(getattr(args[0], data_variable_name))
+                logging.info(
+                    f"{number_of_loaded_df} Successfull loaded dataframes."
+                )
+            return wrapper
+        return decorator
