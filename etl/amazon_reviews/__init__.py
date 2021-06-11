@@ -23,10 +23,17 @@ class ETL(BaseETL):
         ]
 
         self.dataframes = []
+        column_names = ('rating', 'header', 'body')
         for csv_file in csv_files:
             if csv_file in already_processed_files:
                 continue
-            self.dataframes.append(os.path.join(df_dir, csv_file))
+            self.dataframes.append(
+                pd.read_csv(
+                    os.path.join(df_dir, csv_file),
+                    names=column_names,
+                    header=None
+                )
+            )
 
     def _extract(self):
         pass
