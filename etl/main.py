@@ -1,9 +1,10 @@
 import logging
 import argparse
 
-from configs import SOURCES
+from configs import SOURCES, settings
 
 logger = logging.getLogger()
+logger.setLevel(logging.getLevelName(settings.LOG_LEVEL))
 
 
 def parse_cmd_args() -> dict:
