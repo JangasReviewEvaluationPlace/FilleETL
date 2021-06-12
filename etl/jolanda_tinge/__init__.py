@@ -13,7 +13,6 @@ class ETL(BaseETL):
     def _extract(self):
         # Read the source data from sample data directory
         # self.df = TODO
-        print(a)
         pass
 
     def _transform(self):
