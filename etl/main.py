@@ -41,16 +41,26 @@ def parse_cmd_args() -> dict:
     return vars(parser.parse_args())
 
 
+def dynamic_etl_import(source):
+    mod = __import__(source)
+    return getattr(mod, 'ETL')
+
+
 def main():
     cmd_args = parse_cmd_args()
     if not cmd_args["types"]:
-        for _, ETL in SOURCES.items():
+        for source in SOURCES:
+            ETL = dynamic_etl_import(source=source)
             etl = ETL(allowed_threads=cmd_args["allowed_threads"],
                       chunk_size=cmd_args["chunk_size"])
             etl.run(is_dummy=cmd_args["mode"] != "run")
     else:
-        for etl_type in cmd_args["types"].split(","):
-            ETL = SOURCES.get(etl_type)
+        for source in cmd_args["types"].split(","):
+            try:
+                ETL = dynamic_etl_import(source=source)
+            except ModuleNotFoundError:
+                logging.error(f"No Source with {source} exists.")
+                continue
             if ETL:
                 etl = ETL(allowed_threads=cmd_args["allowed_threads"],
                           chunk_size=cmd_args["chunk_size"])
