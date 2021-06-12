@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from typing import List
 from utils import BaseETL, GenericETLLoggingDecorators
+from utils.language_detection import set_not_english_columns_to_null
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,20 @@ class ETL(BaseETL):
             )
 
     def _transform(self):
-        pass
+        for df in self.dataframes:
+            # Label rating
+            df.loc[df["rating"] > 3, "type"] = 'positive'
+            df.loc[df["rating"] == 3, "type"] = 'neutral'
+            df.loc[df["rating"] < 3, "type"] = 'negative'
+
+            # Language Detection
+            set_not_english_columns_to_null(df)
+            df.dropna(inplace=True)
+
+            # Cleanup and conventions
+            df["source"] = "Amazon Reviews"
+            df["is_streaming"] = False
+            df.drop('rating', axis=1, inplace=True)
 
     def _load(self):
         pass
