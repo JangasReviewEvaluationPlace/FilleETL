@@ -31,3 +31,10 @@ class TestCSVOutputs:
         fixture_file_path = os.path.join(FILE_DIRE, "fixtures", "expected_outputs",
                                          "amazon_reviews.csv")
         assert filecmp.cmp(created_file_path, fixture_file_path)
+
+    def test_jolanda_tinge_singlethread_no_chunking(self):
+        etl = AmazonReviewETL(is_dummy=True)
+        etl.sample_data_dir = os.path.join(FILE_DIRE, "fixtures", "sample_data", "amazon_reviews")
+        self.cleanup_output_directory(etl=etl)
+        etl.run()
+        assert True
