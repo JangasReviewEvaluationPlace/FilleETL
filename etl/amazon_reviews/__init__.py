@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 class ETL(BaseETL):
     file_dir = os.path.dirname(os.path.realpath(__file__))
 
-    @GenericETLLoggingDecorators.load(data_variable_name="dataframes")
-    def _load(self, is_dummy: bool):
+    @GenericETLLoggingDecorators.extract(data_variable_name="dataframes")
+    def _extract(self, is_dummy: bool):
         df_dir = self.file_dir if not is_dummy else self.sample_data_dir
         csv_files = [
             csv_file for csv_file in os.listdir(df_dir)
@@ -35,8 +35,8 @@ class ETL(BaseETL):
                 )
             )
 
-    def _extract(self):
+    def _transform(self):
         pass
 
-    def _transform(self):
+    def _load(self):
         pass

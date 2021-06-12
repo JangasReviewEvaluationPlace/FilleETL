@@ -18,37 +18,37 @@ class BaseETL(ABC):
         if not os.path.isdir(self.output_dir):
             os.mkdir(self.output_dir)
 
-        self._load(is_dummy=is_dummy)
+        self._extract(is_dummy=is_dummy)
         self._transform()
-        self._extract()
+        self._load()
 
     @abstractproperty
     def file_dir(self):
         pass
 
     @abstractmethod
-    def _load(self, is_dummy: bool):
-        pass
-
-    @abstractmethod
-    def _extract(self):
+    def _extract(self, is_dummy: bool):
         pass
 
     @abstractmethod
     def _transform(self):
         pass
 
+    @abstractmethod
+    def _load(self):
+        pass
+
 
 class GenericETLLoggingDecorators:
     @staticmethod
-    def load(data_variable_name: str = "dataframe"):
+    def extract(data_variable_name: str = "dataframe"):
         def decorator(func):
             def wrapper(*args, **kwargs):
-                logging.info("Start Loading Data into ETL")
+                logging.info("Start to extract Data into ETL")
                 func(*args, **kwargs)
                 number_of_loaded_df = len(getattr(args[0], data_variable_name))
                 logging.info(
-                    f"{number_of_loaded_df} Successfull loaded dataframes."
+                    f"{number_of_loaded_df} Successfull extracted dataframes."
                 )
             return wrapper
         return decorator
