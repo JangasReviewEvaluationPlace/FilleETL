@@ -2,8 +2,6 @@ import logging
 import argparse
 
 from configs import SOURCES, settings
-from utils import BaseETL
-from utils.sftp import send_outputs_to_sftp
 
 logger = logging.getLogger()
 logger.setLevel(logging.getLevelName(settings.LOG_LEVEL))
@@ -62,7 +60,8 @@ def process_etl(source: str, cmd_args: dict):
         return
     etl = ETL(allowed_threads=cmd_args["allowed_threads"],
               chunk_size=cmd_args["chunk_size"],
-              is_dummy=cmd_args["mode"] != "run")
+              is_dummy=cmd_args["mode"] != "run",
+              sftp_active=cmd_args["copy_to_sftp"])
     etl.run()
 
 
@@ -71,13 +70,9 @@ def main():
     if not cmd_args["types"]:
         for source in SOURCES:
             process_etl(source=source, cmd_args=cmd_args)
-            if cmd_args["copy_to_sftp"]:
-                send_outputs_to_sftp(source=source)
     else:
         for source in cmd_args["types"].split(","):
             process_etl(source=source, cmd_args=cmd_args)
-            if cmd_args["copy_to_sftp"]:
-                send_outputs_to_sftp(source=source)
 
 
 if __name__ == "__main__":

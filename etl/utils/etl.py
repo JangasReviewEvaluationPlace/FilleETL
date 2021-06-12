@@ -6,8 +6,9 @@ from abc import ABC, abstractmethod, abstractproperty
 
 class BaseETL(ABC):
     def __init__(self, is_dummy: bool = False, allowed_threads: int = 1, chunk_size=None,
-                 *args, **kwargs):
+                 sftp_active: bool = False, *args, **kwargs):
         self.is_dummy = is_dummy
+        self.sftp_active = sftp_active
         if not is_dummy:
             self.data_dir = os.path.join(self.file_dir, "data")
             assert os.path.isdir(self.data_dir), (

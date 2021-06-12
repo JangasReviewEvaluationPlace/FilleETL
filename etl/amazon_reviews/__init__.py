@@ -7,6 +7,7 @@ from typing import List, Generator
 from utils import BaseETL
 from utils.etl import ETLLogMessages
 from utils.language_detection import set_not_english_columns_to_null
+from utils.sftp import send_file_to_sftp
 
 
 logger = logging.getLogger(__name__)
@@ -99,10 +100,13 @@ class ETL(BaseETL):
             output_csv_name = f"{filename}__chunk_{self.__current_chunk_index}__.csv"
         else:
             output_csv_name = self.__csv_file_name
-        df.to_csv(os.path.join(self.output_dir, output_csv_name), index=False, sep="\t")
+        output_file = os.path.join(self.output_dir, output_csv_name)
+        df.to_csv(output_file, index=False, sep="\t")
         logging.info(ETLLogMessages.finish_loading(
             rowcount=df.shape[0], file_name=output_csv_name)
         )
+        if self.sftp_active:
+            send_file_to_sftp(path=output_file, filename=output_csv_name)
 
     def run(self):
         logging.info(ETLLogMessages.start_etl())
