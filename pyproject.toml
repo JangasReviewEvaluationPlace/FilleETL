@@ -10,6 +10,7 @@ python-dotenv = "^0.17.1"
 pandas = "^1.2.4"
 langdetect = "^1.0.9"
 pysftp = "^0.2.9"
+nltk = "^3.6.2"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.2"

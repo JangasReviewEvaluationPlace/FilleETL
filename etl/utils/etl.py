@@ -69,6 +69,7 @@ class BaseETL(ABC):
                 t.join()
         else:
             for df, csv_file_name in df_generator:
+                chunk_index += 1
                 kwds = {"df": df, "chunk_index": chunk_index, "csv_file_name": csv_file_name}
                 self.transform_load_process_for_given_df(**kwds)
 

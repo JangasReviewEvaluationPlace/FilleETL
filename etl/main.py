@@ -1,10 +1,13 @@
 import logging
 import argparse
+import nltk
 
 from configs import SOURCES, settings
 
 logger = logging.getLogger()
 logger.setLevel(logging.getLevelName(settings.LOG_LEVEL))
+
+nltk.download('punkt')
 
 
 def parse_cmd_args() -> dict:

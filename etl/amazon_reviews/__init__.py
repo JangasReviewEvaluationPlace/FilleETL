@@ -79,8 +79,6 @@ class ETL(BaseETL):
         logging.info(ETLLogMessages.finish_language_evaluation(
             english_count=df.shape[0], rowcount=initial_shape[0])
         )
-        df["header"] = df["header"].str.replace("\t", "    ")
-        df["body"] = df["body"].str.replace("\t", "    ")
 
         # Cleanup and conventions
         df["source"] = "Amazon Reviews"
