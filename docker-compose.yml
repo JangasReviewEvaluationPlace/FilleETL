@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  etl:
+    build: .
+    container_name: nanogiants_hackathon_fileetl_etl
+    env_file: ./etl/.env
+    command:
+      - sh
+      - -c
+      - |
+        poetry run main.py run
+    volumes:
+      - ./etl:/etl
+      - ./etl/amazon_reviews/data:/amazon_reviews/data
+      - ./etl/amazon_reviews/output:/amazon_reviews/output
