@@ -45,8 +45,8 @@ class ETL(BaseETL):
 
         column_names = ('rating', 'header', 'body')
         for csv_file in csv_files:
-            self.__csv_file_name = os.path.basename(csv_file)
-            if self.__csv_file_name in already_processed_files:
+            csv_file_name = os.path.basename(csv_file)
+            if csv_file_name in already_processed_files:
                 continue
             logging.info(ETLLogMessages.start_extracting())
             df_reader = partial(pd.read_csv, csv_file, names=column_names, header=None)
@@ -56,10 +56,9 @@ class ETL(BaseETL):
                 yield df
             else:
                 with df_reader(chunksize=self.chunk_size) as reader:
-                    for i, df in enumerate(reader):
-                        self.__current_chunk_index = i
+                    for df in reader:
                         logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
-                        yield df
+                        yield df, csv_file_name
 
     def __set_feedback_type(self, df: pd.DataFrame):
         df.loc[df["rating"] > 3, "feedback_type"] = 'positive'
@@ -91,15 +90,13 @@ class ETL(BaseETL):
 
         logging.info(ETLLogMessages.finish_transforming(rowcount=df.shape[0]))
 
-    def _load(self, df: pd.DataFrame):
+    def _load(self, df: pd.DataFrame, chunk_index: int, csv_file_name: str):
         logging.info(ETLLogMessages.start_loading())
-        # self.__csv_file_name and __current_chunk_index are set inside of _extract method.
-        # Ugly codestyle. Sorry for that.
         if self.chunk_size:
-            filename = self.__csv_file_name.split('.')[0]
-            output_csv_name = f"{filename}__chunk_{self.__current_chunk_index}__.csv"
+            filename = csv_file_name.split('.')[0]
+            output_csv_name = f"{filename}__chunk_{chunk_index}__.csv"
         else:
-            output_csv_name = self.__csv_file_name
+            output_csv_name = csv_file_name
         output_file = os.path.join(self.output_dir, output_csv_name)
         df.to_csv(output_file, index=False, sep="\t")
         logging.info(ETLLogMessages.finish_loading(
