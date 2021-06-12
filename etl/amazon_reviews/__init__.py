@@ -14,7 +14,7 @@ class ETL(BaseETL):
     file_dir = os.path.dirname(os.path.realpath(__file__))
 
     def __get_csv_files(self, is_dummy: bool) -> List[str]:
-        df_dir = self.file_dir if not is_dummy else self.sample_data_dir
+        df_dir = self.data_dir if not is_dummy else self.sample_data_dir
         return [
             os.path.join(df_dir, csv_file)
             for csv_file in os.listdir(df_dir)
@@ -61,6 +61,7 @@ class ETL(BaseETL):
         # Cleanup and conventions
         df["source"] = "Amazon Reviews"
         df["is_streaming"] = False
+        df["language_code"] = 'en'
         df.drop('rating', axis=1, inplace=True)
 
         logging.info(ETLLogMessages.finish_transforming(rowcount=df.shape[0]))
