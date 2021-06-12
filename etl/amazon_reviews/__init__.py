@@ -33,8 +33,8 @@ class ETL(BaseETL):
 
         column_names = ('rating', 'header', 'body')
         for csv_file in csv_files:
-            csv_file_name = os.path.basename(csv_file)
-            if csv_file_name in already_processed_files:
+            self.__csv_file_name = os.path.basename(csv_file)
+            if self.__csv_file_name in already_processed_files:
                 continue
             logging.info(ETLLogMessages.start_extracting())
             df = pd.read_csv(csv_file, names=column_names, header=None)
@@ -42,8 +42,9 @@ class ETL(BaseETL):
             yield df
 
     def _transform(self, df):
-        logging.info(ETLLogMessages.start_cleaning())
+        logging.info(ETLLogMessages.start_transforming())
         initial_shape = df.shape
+
         # Label rating
         df.loc[df["rating"] > 3, "type"] = 'positive'
         df.loc[df["rating"] == 3, "type"] = 'neutral'
@@ -62,10 +63,17 @@ class ETL(BaseETL):
         df["is_streaming"] = False
         df.drop('rating', axis=1, inplace=True)
 
-        logging.info(ETLLogMessages.finish_cleaning(rowcount=df.shape[0]))
+        logging.info(ETLLogMessages.finish_transforming(rowcount=df.shape[0]))
 
-    def _load(self):
-        pass
+    def _load(self, df):
+        logging.info(ETLLogMessages.start_loading())
+        # self.__csv_file_name is set inside of _extract method. Ugly codestyle. Sorry for that.
+        df.to_csv(os.path.join(self.output_dir, self.__csv_file_name))
+        logging.info(ETLLogMessages.finish_loading(
+            rowcount=df.shape[0], file_name=self.__csv_file_name)
+        )
 
     def run(self, is_dummy: bool = False):
-        return self.run_etl_generator(is_dummy=is_dummy)
+        logging.info(ETLLogMessages.start_etl())
+        self.run_etl_generator(is_dummy=is_dummy)
+        logging.info(ETLLogMessages.finish_etl())

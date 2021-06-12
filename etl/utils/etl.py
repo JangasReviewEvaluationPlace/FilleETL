@@ -42,7 +42,7 @@ class BaseETL(ABC):
         df_generator = self._extract(is_dummy=is_dummy)
         for df in df_generator:
             self._transform(df)
-            self._load()
+            self._load(df)
 
     @abstractmethod
     def run(is_dummy: bool = False):
@@ -50,6 +50,14 @@ class BaseETL(ABC):
 
 
 class ETLLogMessages:
+    @staticmethod
+    def start_etl() -> str:
+        return "Start ETL process"
+
+    @staticmethod
+    def finish_etl() -> str:
+        return "ETL process Done"
+
     @staticmethod
     def start_extracting() -> str:
         return "Start to extract Data into ETL"
@@ -59,12 +67,12 @@ class ETLLogMessages:
         return f"Dataframe Extracted with rowcount: {rowcount}."
 
     @staticmethod
-    def start_cleaning() -> str:
+    def start_transforming() -> str:
         return "Start Transforming the dataset."
 
     @staticmethod
-    def finish_cleaning(rowcount: int) -> str:
-        return f"Cleaning is finalized. {rowcount} lines have survived."
+    def finish_transforming(rowcount: int) -> str:
+        return f"Transforming is finalized. {rowcount} lines have survived."
 
     @staticmethod
     def start_language_evaluation() -> str:
@@ -73,3 +81,11 @@ class ETLLogMessages:
     @staticmethod
     def finish_language_evaluation(english_count, rowcount) -> str:
         return f"Finish language evaluation. {english_count} out of {rowcount} rows are english."
+
+    @staticmethod
+    def start_loading() -> str:
+        return "Start writing data to output file."
+
+    @staticmethod
+    def finish_loading(rowcount: int, file_name: str) -> str:
+        return f"{rowcount} lines written into file: {file_name}."
