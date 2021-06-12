@@ -53,7 +53,7 @@ class ETL(BaseETL):
             if not self.chunk_size:
                 df = df_reader()
                 logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
-                yield df
+                yield df, csv_file_name
             else:
                 with df_reader(chunksize=self.chunk_size) as reader:
                     for df in reader:
