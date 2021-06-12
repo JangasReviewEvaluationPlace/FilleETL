@@ -2,6 +2,7 @@ import logging
 import argparse
 
 from configs import SOURCES, settings
+from utils.sftp import send_outputs_to_sftp
 
 logger = logging.getLogger()
 logger.setLevel(logging.getLevelName(settings.LOG_LEVEL))
@@ -55,6 +56,7 @@ def main():
                       chunk_size=cmd_args["chunk_size"],
                       is_dummy=cmd_args["mode"] != "run")
             etl.run()
+            send_outputs_to_sftp(source=source)
     else:
         for source in cmd_args["types"].split(","):
             try:
@@ -67,6 +69,7 @@ def main():
                           chunk_size=cmd_args["chunk_size"],
                           is_dummy=cmd_args["mode"] != "run")
                 etl.run()
+                send_outputs_to_sftp(source=source)
 
 
 if __name__ == "__main__":

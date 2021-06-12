@@ -14,3 +14,8 @@ services:
       - ./etl:/etl
       - ./etl/amazon_reviews/data:/amazon_reviews/data
       - ./etl/amazon_reviews/output:/amazon_reviews/output
+
+  sftp:
+    build: ./sftp
+    ports: 
+      - 32768:32768
