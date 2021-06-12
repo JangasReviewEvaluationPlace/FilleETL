@@ -1,9 +1,11 @@
 import os
+import logging
+import multiprocessing
 from abc import ABC, abstractmethod, abstractproperty
 
 
 class BaseETL(ABC):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, allowed_threads: int = 1, chunk_size=None, *args, **kwargs):
         self.data_dir = os.path.join(self.file_dir, "data")
         assert os.path.isdir(self.data_dir), (
             'A directory named `data` must exist.'
@@ -16,6 +18,9 @@ class BaseETL(ABC):
         self.output_dir = os.path.join(self.file_dir, "output")
         if not os.path.isdir(self.output_dir):
             os.mkdir(self.output_dir)
+
+        self.allowed_threads = allowed_threads
+        self.chunk_size = chunk_size
 
     @abstractproperty
     def file_dir(self):
@@ -38,11 +43,26 @@ class BaseETL(ABC):
         self._transform()
         self._load()
 
+    def transform_load_process_for_given_df(self, df):
+        self._transform(df)
+        self._load(df)
+
     def run_etl_generator(self, is_dummy: bool):
         df_generator = self._extract(is_dummy=is_dummy)
-        for df in df_generator:
-            self._transform(df)
-            self._load(df)
+        if self.allowed_threads > 1:
+            logging.info("Schedule Threads")
+            with multiprocessing.Pool(self.allowed_threads) as t:
+                for df in df_generator:
+                    logging.info("Schedule df to thread")
+                    t.apply_async(
+                        self.transform_load_process_for_given_df,
+                        kwds={"df": df}
+                    )
+                t.close()
+                t.join()
+        else:
+            for df in df_generator:
+                self.transform_load_process_for_given_df(df)
 
     @abstractmethod
     def run(is_dummy: bool = False):

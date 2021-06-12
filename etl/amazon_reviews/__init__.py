@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import pandas as pd
 from typing import List
 from utils import BaseETL
@@ -22,10 +23,17 @@ class ETL(BaseETL):
         ]
 
     def __already_processed_files(self) -> List[str]:
-        return [
-            csv_file for csv_file in os.listdir(self.output_dir)
-            if csv_file.endswith(".csv")
-        ]
+        chunk_pattern = "__chunk_(.+?)__"
+        file_list = []
+        for f in os.listdir(self.output_dir):
+            chunk_info = re.search(chunk_pattern, f)
+            if chunk_info:
+                cleaned_file_name = f.replace(f"__chunk_{chunk_info.group(1)}__", "")
+                if cleaned_file_name not in file_list:
+                    file_list.append(cleaned_file_name)
+            else:
+                file_list.append(f)
+        return file_list
 
     def _extract(self, is_dummy: bool):
         csv_files = self.__get_csv_files(is_dummy=is_dummy)
@@ -37,9 +45,16 @@ class ETL(BaseETL):
             if self.__csv_file_name in already_processed_files:
                 continue
             logging.info(ETLLogMessages.start_extracting())
-            df = pd.read_csv(csv_file, names=column_names, header=None)
-            logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
-            yield df
+            if not self.chunk_size:
+                df = pd.read_csv(csv_file, names=column_names, header=None)
+                logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
+                yield df
+            else:
+                with pd.read_csv(csv_file, names=column_names, header=None, chunksize=self.chunk_size) as reader:
+                    for i, df in enumerate(reader):
+                        self.__current_chunk_index = i
+                        logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
+                        yield df
 
     def _transform(self, df):
         logging.info(ETLLogMessages.start_transforming())
@@ -68,10 +83,16 @@ class ETL(BaseETL):
 
     def _load(self, df):
         logging.info(ETLLogMessages.start_loading())
-        # self.__csv_file_name is set inside of _extract method. Ugly codestyle. Sorry for that.
-        df.to_csv(os.path.join(self.output_dir, self.__csv_file_name))
+        # self.__csv_file_name and __current_chunk_index are set inside of _extract method.
+        # Ugly codestyle. Sorry for that.
+        if self.chunk_size:
+            filename = self.__csv_file_name.split('.')[0]
+            output_csv_name = f"{filename}__chunk_{self.__current_chunk_index}__.csv"
+        else:
+            output_csv_name = self.__csv_file_name
+        df.to_csv(os.path.join(self.output_dir, output_csv_name))
         logging.info(ETLLogMessages.finish_loading(
-            rowcount=df.shape[0], file_name=self.__csv_file_name)
+            rowcount=df.shape[0], file_name=output_csv_name)
         )
 
     def run(self, is_dummy: bool = False):
