@@ -30,12 +30,14 @@ def main():
     cmd_args = parse_cmd_args()
     if not cmd_args["types"]:
         for _, ETL in SOURCES.items():
-            ETL(is_dummy=cmd_args["mode"] != "run")
+            etl = ETL()
+            etl.run(is_dummy=cmd_args["mode"] != "run")
     else:
         for etl_type in cmd_args["types"].split(","):
             ETL = SOURCES.get(etl_type)
             if ETL:
-                ETL(is_dummy=cmd_args["mode"] != "run")
+                etl = ETL()
+                etl.run(is_dummy=cmd_args["mode"] != "run")
 
 
 if __name__ == "__main__":

@@ -1,10 +1,9 @@
-import logging
 import os
 from abc import ABC, abstractmethod, abstractproperty
 
 
 class BaseETL(ABC):
-    def __init__(self, is_dummy: bool = False, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.data_dir = os.path.join(self.file_dir, "data")
         assert os.path.isdir(self.data_dir), (
             'A directory named `data` must exist.'
@@ -18,10 +17,6 @@ class BaseETL(ABC):
         if not os.path.isdir(self.output_dir):
             os.mkdir(self.output_dir)
 
-        self._extract(is_dummy=is_dummy)
-        self._transform()
-        self._load()
-
     @abstractproperty
     def file_dir(self):
         pass
@@ -31,24 +26,50 @@ class BaseETL(ABC):
         pass
 
     @abstractmethod
-    def _transform(self):
+    def _transform(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def _load(self):
+    def _load(self, *args, **kwargs):
+        pass
+
+    def run_etl(self, is_dummy: bool):
+        self._extract(is_dummy=is_dummy)
+        self._transform()
+        self._load()
+
+    def run_etl_generator(self, is_dummy: bool):
+        df_generator = self._extract(is_dummy=is_dummy)
+        for df in df_generator:
+            self._transform(df)
+            self._load()
+
+    @abstractmethod
+    def run(is_dummy: bool = False):
         pass
 
 
-class GenericETLLoggingDecorators:
+class ETLLogMessages:
     @staticmethod
-    def extract(data_variable_name: str = "dataframe"):
-        def decorator(func):
-            def wrapper(*args, **kwargs):
-                logging.info("Start to extract Data into ETL")
-                func(*args, **kwargs)
-                number_of_loaded_df = len(getattr(args[0], data_variable_name))
-                logging.info(
-                    f"{number_of_loaded_df} Successfull extracted dataframes."
-                )
-            return wrapper
-        return decorator
+    def start_extracting() -> str:
+        return "Start to extract Data into ETL"
+
+    @staticmethod
+    def finish_extracting_single_dataset(rowcount: int) -> str:
+        return f"Dataframe Extracted with rowcount: {rowcount}."
+
+    @staticmethod
+    def start_cleaning() -> str:
+        return "Start Transforming the dataset."
+
+    @staticmethod
+    def finish_cleaning(rowcount: int) -> str:
+        return f"Cleaning is finalized. {rowcount} lines have survived."
+
+    @staticmethod
+    def start_language_evaluation() -> str:
+        return "Start language evaluation."
+
+    @staticmethod
+    def finish_language_evaluation(english_count, rowcount) -> str:
+        return f"Finish language evaluation. {english_count} out of {rowcount} rows are english."

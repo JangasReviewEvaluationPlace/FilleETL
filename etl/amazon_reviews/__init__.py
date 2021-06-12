@@ -2,7 +2,8 @@ import logging
 import os
 import pandas as pd
 from typing import List
-from utils import BaseETL, GenericETLLoggingDecorators
+from utils import BaseETL
+from utils.etl import ETLLogMessages
 from utils.language_detection import set_not_english_columns_to_null
 
 
@@ -26,36 +27,45 @@ class ETL(BaseETL):
             if csv_file.endswith(".csv")
         ]
 
-    @GenericETLLoggingDecorators.extract(data_variable_name="dataframes")
     def _extract(self, is_dummy: bool):
         csv_files = self.__get_csv_files(is_dummy=is_dummy)
         already_processed_files = self.__already_processed_files()
 
-        self.dataframes = []
         column_names = ('rating', 'header', 'body')
         for csv_file in csv_files:
             csv_file_name = os.path.basename(csv_file)
             if csv_file_name in already_processed_files:
                 continue
-            self.dataframes.append(
-                pd.read_csv(csv_file, names=column_names, header=None)
-            )
+            logging.info(ETLLogMessages.start_extracting())
+            df = pd.read_csv(csv_file, names=column_names, header=None)
+            logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
+            yield df
 
-    def _transform(self):
-        for df in self.dataframes:
-            # Label rating
-            df.loc[df["rating"] > 3, "type"] = 'positive'
-            df.loc[df["rating"] == 3, "type"] = 'neutral'
-            df.loc[df["rating"] < 3, "type"] = 'negative'
+    def _transform(self, df):
+        logging.info(ETLLogMessages.start_cleaning())
+        initial_shape = df.shape
+        # Label rating
+        df.loc[df["rating"] > 3, "type"] = 'positive'
+        df.loc[df["rating"] == 3, "type"] = 'neutral'
+        df.loc[df["rating"] < 3, "type"] = 'negative'
 
-            # Language Detection
-            set_not_english_columns_to_null(df)
-            df.dropna(inplace=True)
+        # Language Detection
+        logging.info(ETLLogMessages.start_language_evaluation())
+        set_not_english_columns_to_null(df)
+        df.dropna(inplace=True)
+        logging.info(ETLLogMessages.finish_language_evaluation(
+            english_count=df.shape[0], rowcount=initial_shape[0])
+        )
 
-            # Cleanup and conventions
-            df["source"] = "Amazon Reviews"
-            df["is_streaming"] = False
-            df.drop('rating', axis=1, inplace=True)
+        # Cleanup and conventions
+        df["source"] = "Amazon Reviews"
+        df["is_streaming"] = False
+        df.drop('rating', axis=1, inplace=True)
+
+        logging.info(ETLLogMessages.finish_cleaning(rowcount=df.shape[0]))
 
     def _load(self):
         pass
+
+    def run(self, is_dummy: bool = False):
+        return self.run_etl_generator(is_dummy=is_dummy)
