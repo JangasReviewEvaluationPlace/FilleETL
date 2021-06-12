@@ -2,7 +2,8 @@ import logging
 import os
 import re
 import pandas as pd
-from typing import List
+from functools import partial
+from typing import List, Generator
 from utils import BaseETL
 from utils.etl import ETLLogMessages
 from utils.language_detection import set_not_english_columns_to_null
@@ -37,7 +38,7 @@ class ETL(BaseETL):
                 file_list.append(f)
         return file_list
 
-    def _extract(self, is_dummy: bool):
+    def _extract(self, is_dummy: bool) -> Generator[pd.DataFrame, None, None]:
         csv_files = self.__get_csv_files(is_dummy=is_dummy)
         already_processed_files = self.__already_processed_files()
 
@@ -47,23 +48,24 @@ class ETL(BaseETL):
             if self.__csv_file_name in already_processed_files:
                 continue
             logging.info(ETLLogMessages.start_extracting())
+            df_reader = partial(pd.read_csv, csv_file, names=column_names, header=None)
             if not self.chunk_size:
-                df = pd.read_csv(csv_file, names=column_names, header=None)
+                df = df_reader()
                 logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
                 yield df
             else:
-                with pd.read_csv(csv_file, names=column_names, header=None, chunksize=self.chunk_size) as reader:
+                with df_reader(chunksize=self.chunk_size) as reader:
                     for i, df in enumerate(reader):
                         self.__current_chunk_index = i
                         logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
                         yield df
 
-    def __set_type(self, df):
+    def __set_type(self, df: pd.DataFrame):
         df.loc[df["rating"] > 3, "type"] = 'positive'
         df.loc[df["rating"] == 3, "type"] = 'neutral'
         df.loc[df["rating"] < 3, "type"] = 'negative'
 
-    def _transform(self, df):
+    def _transform(self, df: pd.DataFrame):
         logging.info(ETLLogMessages.start_transforming())
         initial_shape = df.shape
 
@@ -86,7 +88,7 @@ class ETL(BaseETL):
 
         logging.info(ETLLogMessages.finish_transforming(rowcount=df.shape[0]))
 
-    def _load(self, df):
+    def _load(self, df: pd.DataFrame):
         logging.info(ETLLogMessages.start_loading())
         # self.__csv_file_name and __current_chunk_index are set inside of _extract method.
         # Ugly codestyle. Sorry for that.
