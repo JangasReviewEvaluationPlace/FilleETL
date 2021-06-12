@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 class ETL(BaseETL):
     file_dir = os.path.dirname(os.path.realpath(__file__))
 
-    def __get_csv_files(self, is_dummy: bool) -> List[str]:
-        df_dir = self.data_dir if not is_dummy else self.sample_data_dir
+    def __get_csv_files(self) -> List[str]:
+        df_dir = self.data_dir if not self.is_dummy else self.sample_data_dir
         return [
             os.path.join(df_dir, csv_file)
             for csv_file in os.listdir(df_dir)
@@ -38,8 +38,8 @@ class ETL(BaseETL):
                 file_list.append(f)
         return file_list
 
-    def _extract(self, is_dummy: bool) -> Generator[pd.DataFrame, None, None]:
-        csv_files = self.__get_csv_files(is_dummy=is_dummy)
+    def _extract(self) -> Generator[pd.DataFrame, None, None]:
+        csv_files = self.__get_csv_files()
         already_processed_files = self.__already_processed_files()
 
         column_names = ('rating', 'header', 'body')
@@ -104,7 +104,7 @@ class ETL(BaseETL):
             rowcount=df.shape[0], file_name=output_csv_name)
         )
 
-    def run(self, is_dummy: bool = False):
+    def run(self):
         logging.info(ETLLogMessages.start_etl())
-        self.run_etl_generator(is_dummy=is_dummy)
+        self.run_etl_generator()
         logging.info(ETLLogMessages.finish_etl())

@@ -5,11 +5,14 @@ from abc import ABC, abstractmethod, abstractproperty
 
 
 class BaseETL(ABC):
-    def __init__(self, allowed_threads: int = 1, chunk_size=None, *args, **kwargs):
-        self.data_dir = os.path.join(self.file_dir, "data")
-        assert os.path.isdir(self.data_dir), (
-            'A directory named `data` must exist.'
-        )
+    def __init__(self, is_dummy: bool = False, allowed_threads: int = 1, chunk_size=None,
+                 *args, **kwargs):
+        self.is_dummy = is_dummy
+        if not is_dummy:
+            self.data_dir = os.path.join(self.file_dir, "data")
+            assert os.path.isdir(self.data_dir), (
+                'A directory named `data` must exist.'
+            )
         self.sample_data_dir = os.path.join(self.file_dir, "sample_data")
         assert os.path.isdir(self.sample_data_dir), (
             'A directory named `sample_data_dir` must exist.'
@@ -27,7 +30,7 @@ class BaseETL(ABC):
         pass
 
     @abstractmethod
-    def _extract(self, is_dummy: bool):
+    def _extract(self):
         pass
 
     @abstractmethod
@@ -38,8 +41,8 @@ class BaseETL(ABC):
     def _load(self, *args, **kwargs):
         pass
 
-    def run_etl(self, is_dummy: bool):
-        self._extract(is_dummy=is_dummy)
+    def run_etl(self):
+        self._extract()
         self._transform()
         self._load()
 
@@ -47,8 +50,8 @@ class BaseETL(ABC):
         self._transform(df)
         self._load(df)
 
-    def run_etl_generator(self, is_dummy: bool):
-        df_generator = self._extract(is_dummy=is_dummy)
+    def run_etl_generator(self):
+        df_generator = self._extract()
         if self.allowed_threads > 1:
             logging.info("Schedule Threads")
             with multiprocessing.Pool(self.allowed_threads) as t:
