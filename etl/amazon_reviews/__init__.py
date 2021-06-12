@@ -60,17 +60,17 @@ class ETL(BaseETL):
                         logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
                         yield df
 
-    def __set_type(self, df: pd.DataFrame):
-        df.loc[df["rating"] > 3, "type"] = 'positive'
-        df.loc[df["rating"] == 3, "type"] = 'neutral'
-        df.loc[df["rating"] < 3, "type"] = 'negative'
+    def __set_feedback_type(self, df: pd.DataFrame):
+        df.loc[df["rating"] > 3, "feedback_type"] = 'positive'
+        df.loc[df["rating"] == 3, "feedback_type"] = 'neutral'
+        df.loc[df["rating"] < 3, "feedback_type"] = 'negative'
 
     def _transform(self, df: pd.DataFrame):
         logging.info(ETLLogMessages.start_transforming())
         initial_shape = df.shape
 
         # Label rating
-        self.__set_type(df)
+        self.__set_feedback_type(df)
 
         # Language Detection
         logging.info(ETLLogMessages.start_language_evaluation())
