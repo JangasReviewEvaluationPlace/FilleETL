@@ -2,6 +2,7 @@ import logging
 import argparse
 
 from configs import SOURCES, settings
+from utils import BaseETL
 from utils.sftp import send_outputs_to_sftp
 
 logger = logging.getLogger()
@@ -38,6 +39,12 @@ def parse_cmd_args() -> dict:
             "If setted the datasource will be splitted into chunks with given size."
         )
     )
+    parser.add_argument(
+        "--copy-to-sftp",
+        required=False,
+        type=bool,
+        help="should output get copied to sftp server?"
+    )
 
     return vars(parser.parse_args())
 
@@ -47,28 +54,29 @@ def dynamic_etl_import(source):
     return getattr(mod, 'ETL')
 
 
+def process_etl(source: str, cmd_args: dict):
+    try:
+        ETL = dynamic_etl_import(source=source)
+    except ModuleNotFoundError:
+        logging.error(f"No Source with {source} exists.")
+        return
+    etl = ETL(allowed_threads=cmd_args["allowed_threads"],
+              chunk_size=cmd_args["chunk_size"],
+              is_dummy=cmd_args["mode"] != "run")
+    etl.run()
+
+
 def main():
     cmd_args = parse_cmd_args()
     if not cmd_args["types"]:
         for source in SOURCES:
-            ETL = dynamic_etl_import(source=source)
-            etl = ETL(allowed_threads=cmd_args["allowed_threads"],
-                      chunk_size=cmd_args["chunk_size"],
-                      is_dummy=cmd_args["mode"] != "run")
-            etl.run()
-            send_outputs_to_sftp(source=source)
+            process_etl(source=source, cmd_args=cmd_args)
+            if cmd_args["copy_to_sftp"]:
+                send_outputs_to_sftp(source=source)
     else:
         for source in cmd_args["types"].split(","):
-            try:
-                ETL = dynamic_etl_import(source=source)
-            except ModuleNotFoundError:
-                logging.error(f"No Source with {source} exists.")
-                continue
-            if ETL:
-                etl = ETL(allowed_threads=cmd_args["allowed_threads"],
-                          chunk_size=cmd_args["chunk_size"],
-                          is_dummy=cmd_args["mode"] != "run")
-                etl.run()
+            process_etl(source=source, cmd_args=cmd_args)
+            if cmd_args["copy_to_sftp"]:
                 send_outputs_to_sftp(source=source)
 
 
