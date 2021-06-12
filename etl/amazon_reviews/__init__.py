@@ -23,6 +23,8 @@ class ETL(BaseETL):
         ]
 
     def __already_processed_files(self) -> List[str]:
+        # I know: Antipattern
+        # there are better ways to replace chunks
         chunk_pattern = "__chunk_(.+?)__"
         file_list = []
         for f in os.listdir(self.output_dir):
@@ -56,14 +58,17 @@ class ETL(BaseETL):
                         logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
                         yield df
 
+    def __set_type(self, df):
+        df.loc[df["rating"] > 3, "type"] = 'positive'
+        df.loc[df["rating"] == 3, "type"] = 'neutral'
+        df.loc[df["rating"] < 3, "type"] = 'negative'
+
     def _transform(self, df):
         logging.info(ETLLogMessages.start_transforming())
         initial_shape = df.shape
 
         # Label rating
-        df.loc[df["rating"] > 3, "type"] = 'positive'
-        df.loc[df["rating"] == 3, "type"] = 'neutral'
-        df.loc[df["rating"] < 3, "type"] = 'negative'
+        self.__set_type(df)
 
         # Language Detection
         logging.info(ETLLogMessages.start_language_evaluation())
