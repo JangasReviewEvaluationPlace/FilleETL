@@ -79,6 +79,8 @@ class ETL(BaseETL):
         logging.info(ETLLogMessages.finish_language_evaluation(
             english_count=df.shape[0], rowcount=initial_shape[0])
         )
+        df["header"] = df["header"].str.replace("\t", "    ")
+        df["body"] = df["body"].str.replace("\t", "    ")
 
         # Cleanup and conventions
         df["source"] = "Amazon Reviews"
@@ -97,7 +99,7 @@ class ETL(BaseETL):
             output_csv_name = f"{filename}__chunk_{self.__current_chunk_index}__.csv"
         else:
             output_csv_name = self.__csv_file_name
-        df.to_csv(os.path.join(self.output_dir, output_csv_name))
+        df.to_csv(os.path.join(self.output_dir, output_csv_name), index=False, sep="\t")
         logging.info(ETLLogMessages.finish_loading(
             rowcount=df.shape[0], file_name=output_csv_name)
         )
