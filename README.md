@@ -46,7 +46,27 @@ installing the requirements. e.g.
 pip install -r requirements.txt
 ```
 
-3. start the application
+3. Create an env file and set properties:
+```
+cp etl/.env.example etl/.env
+```
+- `LOG_LEVEL` [`str`]: choices: `DEBUG`, `INFO`, `WARNING`, `ERROR`,
+    default: `INFO`
+- `LANGUAGE_PROPABILITY_TRESHOLD` [`float`]: the python package
+    `langdetect` is used for language detection. The method which is
+    in used will always give a propability for an language back to
+    the user. The treshold is the lowest allowed propability for the
+    detected language.
+- `STEMMING_REQUIRED` [`bool`]: if True: each text will be stemmed
+    with `nltk.stem.lancaster.LancasterStemmer`, if False no stemming
+    will be included.
+- `SFTP_HOSTNAME` [`str`]: Host for external server
+- `SFTP_PORT` [`int`]: Port for external server
+- `SFTP_USERNAME` [`str`]: username for external server
+- `SFTP_PASSWORD` [`str`]: password for external server
+
+
+4. start the application
 ```
 python etl/main.py <run mode> \
     [:optional --sources] \
@@ -118,4 +138,5 @@ If threading is greater than 1, the chunks are still realized by
 generator function but the full dataset will be loaded at once.
 
 2. **CMD Parameter `copy-to-sftp`**
+
 It will be always interpret as `True` if set and `False` if not.

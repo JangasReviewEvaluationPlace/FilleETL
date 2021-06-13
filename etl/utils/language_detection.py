@@ -8,6 +8,7 @@ from langdetect.lang_detect_exception import LangDetectException
 from typing import List
 from nltk import word_tokenize
 from nltk.stem.lancaster import LancasterStemmer
+import configs
 
 
 from configs.settings import LANGUAGE_PROPABILITY_TRESHOLD
@@ -46,12 +47,18 @@ def set_not_english_columns_to_null(df):
 
         if is_en:
             try:
-                header = " ".join(get_tokens_from_pattern(pattern=row["header"]))
-                body = " ".join(get_tokens_from_pattern(pattern=row["body"]))
+                if configs.STEMMING_REQUIRED:
+                    header = " ".join(get_tokens_from_pattern(pattern=row["header"]))
+                    body = " ".join(get_tokens_from_pattern(pattern=row["body"]))
+                else:
+                    header = row["header"]
+                    body = row["body"]
                 return pd.Series([header, body])
             except Exception as e:
                 logging.error("Uncatched exception in language detection.", e)
 
         return pd.Series([np.nan, np.nan])
 
-    df[["header", "body"]] = df.apply(text_cleanup, axis=1)
+    if configs.LANGUAGE_DETECTION_REQUIRED:
+        df[["header", "body"]] = df.apply(text_cleanup, axis=1)
+    return
