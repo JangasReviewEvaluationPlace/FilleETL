@@ -87,6 +87,16 @@ python etl/main.py <run mode> \
 - copy-to-sftp [`bool`]: if True: data will be copied to external server
     if not set: False per default
 
+**Demo Command**
+
+```
+python etl/main.py dummy \
+    --sources=amazon_reviews \
+    --allowed-threads=4 \
+    --chunk-size=100 \
+    --copy-to-sftp=True
+```
+
 ## General
 For running this script, you need to have some infos in mind:
 
@@ -127,6 +137,34 @@ of that project without rerunning the whole ETL process which might
 take some time to proceed. Another use case could be that the data
 simply needs to get reproceeded at some point and we might not run
 the whole ETL process again.
+
+## Tutorial - include a new source
+1. Create the new source skeleton
+```
+cp -a etl/utils/source_skeleton etl/<NewSourceName>
+```
+
+2. register your source in `etl/configs/sources`
+```
+SOURCES = (
+    ...,
+    <NewSourceName>
+)
+```
+
+3. Write your etl process. It's important that the output will
+    covering the required format.
+
+
+## Tests
+The application is tested by using `pytest`. Run tests by typing
+```
+poetry run pytest
+```
+
+Only an expectation test is included:
+- test if the expected output matches the real output for each source
+
 
 ## Known Bugs
 1. **Threading & Chunking**

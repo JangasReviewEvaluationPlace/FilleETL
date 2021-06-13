@@ -24,4 +24,4 @@ class ETL(BaseETL):
         pass
 
     def run(self):
-        self.run_etl()
+        pass
