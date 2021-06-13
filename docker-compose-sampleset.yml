@@ -14,3 +14,17 @@ services:
       - ./etl:/etl
       - ./etl/amazon_reviews/data:/amazon_reviews/data
       - ./etl/amazon_reviews/output:/amazon_reviews/output
+
+  sftp:
+    image: ghcr.io/linuxserver/openssh-server
+    container_name: nanogiants_hackathon_fileetl_sftp
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+      - PASSWORD_ACCESS=true
+      - USER_NAME=testuser
+      - USER_PASSWORD=password
+    ports:
+      - 2222:2222
+    restart: unless-stopped

@@ -38,7 +38,6 @@ class ETL(BaseETL):
                 print("missing positional argument: 'is_dummy'")
             print(csv_file)
 
-
     def __set_type(self, df: pd.DataFrame):
         df.loc[df["rating"] > 5, "type"] = 'positive'
         df.loc[df["rating"] <= 5, "type"] = 'negative'

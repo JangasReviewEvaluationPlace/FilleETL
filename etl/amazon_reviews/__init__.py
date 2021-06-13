@@ -7,6 +7,7 @@ from typing import List, Generator
 from utils import BaseETL
 from utils.etl import ETLLogMessages
 from utils.language_detection import set_not_english_columns_to_null
+from utils.sftp import send_file_to_sftp
 
 
 logger = logging.getLogger(__name__)
@@ -44,33 +45,32 @@ class ETL(BaseETL):
 
         column_names = ('rating', 'header', 'body')
         for csv_file in csv_files:
-            self.__csv_file_name = os.path.basename(csv_file)
-            if self.__csv_file_name in already_processed_files:
+            csv_file_name = os.path.basename(csv_file)
+            if csv_file_name in already_processed_files:
                 continue
             logging.info(ETLLogMessages.start_extracting())
             df_reader = partial(pd.read_csv, csv_file, names=column_names, header=None)
             if not self.chunk_size:
                 df = df_reader()
                 logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
-                yield df
+                yield df, csv_file_name
             else:
                 with df_reader(chunksize=self.chunk_size) as reader:
-                    for i, df in enumerate(reader):
-                        self.__current_chunk_index = i
+                    for df in reader:
                         logging.info(ETLLogMessages.finish_extracting_single_dataset(df.shape[0]))
-                        yield df
+                        yield df, csv_file_name
 
-    def __set_type(self, df: pd.DataFrame):
-        df.loc[df["rating"] > 3, "type"] = 'positive'
-        df.loc[df["rating"] == 3, "type"] = 'neutral'
-        df.loc[df["rating"] < 3, "type"] = 'negative'
+    def __set_feedback_type(self, df: pd.DataFrame):
+        df.loc[df["rating"] > 3, "feedback_type"] = 'positive'
+        df.loc[df["rating"] == 3, "feedback_type"] = 'neutral'
+        df.loc[df["rating"] < 3, "feedback_type"] = 'negative'
 
     def _transform(self, df: pd.DataFrame):
         logging.info(ETLLogMessages.start_transforming())
         initial_shape = df.shape
 
         # Label rating
-        self.__set_type(df)
+        self.__set_feedback_type(df)
 
         # Language Detection
         logging.info(ETLLogMessages.start_language_evaluation())
@@ -79,8 +79,6 @@ class ETL(BaseETL):
         logging.info(ETLLogMessages.finish_language_evaluation(
             english_count=df.shape[0], rowcount=initial_shape[0])
         )
-        df["header"] = df["header"].str.replace("\t", "    ")
-        df["body"] = df["body"].str.replace("\t", "    ")
 
         # Cleanup and conventions
         df["source"] = "Amazon Reviews"
@@ -90,19 +88,20 @@ class ETL(BaseETL):
 
         logging.info(ETLLogMessages.finish_transforming(rowcount=df.shape[0]))
 
-    def _load(self, df: pd.DataFrame):
+    def _load(self, df: pd.DataFrame, chunk_index: int, csv_file_name: str):
         logging.info(ETLLogMessages.start_loading())
-        # self.__csv_file_name and __current_chunk_index are set inside of _extract method.
-        # Ugly codestyle. Sorry for that.
         if self.chunk_size:
-            filename = self.__csv_file_name.split('.')[0]
-            output_csv_name = f"{filename}__chunk_{self.__current_chunk_index}__.csv"
+            filename = csv_file_name.split('.')[0]
+            output_csv_name = f"{filename}__chunk_{chunk_index}__.csv"
         else:
-            output_csv_name = self.__csv_file_name
-        df.to_csv(os.path.join(self.output_dir, output_csv_name), index=False, sep="\t")
+            output_csv_name = csv_file_name
+        output_file = os.path.join(self.output_dir, output_csv_name)
+        df.to_csv(output_file, index=False, sep="\t")
         logging.info(ETLLogMessages.finish_loading(
             rowcount=df.shape[0], file_name=output_csv_name)
         )
+        if self.sftp_active:
+            send_file_to_sftp(path=output_file, filename=output_csv_name)
 
     def run(self):
         logging.info(ETLLogMessages.start_etl())

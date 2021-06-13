@@ -2,12 +2,14 @@ import os
 import logging
 import multiprocessing
 from abc import ABC, abstractmethod, abstractproperty
+import pandas as pd
 
 
 class BaseETL(ABC):
     def __init__(self, is_dummy: bool = False, allowed_threads: int = 1, chunk_size=None,
-                 *args, **kwargs):
+                 sftp_active: bool = False, *args, **kwargs):
         self.is_dummy = is_dummy
+        self.sftp_active = sftp_active
         if not is_dummy:
             self.data_dir = os.path.join(self.file_dir, "data")
             assert os.path.isdir(self.data_dir), (
@@ -46,26 +48,30 @@ class BaseETL(ABC):
         self._transform()
         self._load()
 
-    def transform_load_process_for_given_df(self, df):
+    def transform_load_process_for_given_df(self, df: pd.DataFrame, chunk_index: int,
+                                            csv_file_name: str):
         self._transform(df)
-        self._load(df)
+        self._load(df, chunk_index=chunk_index, csv_file_name=csv_file_name)
 
     def run_etl_generator(self):
         df_generator = self._extract()
+        chunk_index = 0
         if self.allowed_threads > 1:
-            logging.info("Schedule Threads")
             with multiprocessing.Pool(self.allowed_threads) as t:
-                for df in df_generator:
-                    logging.info("Schedule df to thread")
+                for df, csv_file_name in df_generator:
+                    logging.info("Schedule df to thread for index")
                     t.apply_async(
                         self.transform_load_process_for_given_df,
-                        kwds={"df": df}
+                        kwds={"df": df, "chunk_index": chunk_index, "csv_file_name": csv_file_name}
                     )
+                    chunk_index += 1
                 t.close()
                 t.join()
         else:
-            for df in df_generator:
-                self.transform_load_process_for_given_df(df)
+            for df, csv_file_name in df_generator:
+                chunk_index += 1
+                kwds = {"df": df, "chunk_index": chunk_index, "csv_file_name": csv_file_name}
+                self.transform_load_process_for_given_df(**kwds)
 
     @abstractmethod
     def run(is_dummy: bool = False):

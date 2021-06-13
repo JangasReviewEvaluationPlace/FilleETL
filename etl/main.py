@@ -1,10 +1,13 @@
 import logging
 import argparse
+import nltk
 
 from configs import SOURCES, settings
 
 logger = logging.getLogger()
 logger.setLevel(logging.getLevelName(settings.LOG_LEVEL))
+
+nltk.download('punkt')
 
 
 def parse_cmd_args() -> dict:
@@ -37,6 +40,12 @@ def parse_cmd_args() -> dict:
             "If setted the datasource will be splitted into chunks with given size."
         )
     )
+    parser.add_argument(
+        "--copy-to-sftp",
+        required=False,
+        type=bool,
+        help="should output get copied to sftp server?"
+    )
 
     return vars(parser.parse_args())
 
@@ -46,15 +55,28 @@ def dynamic_etl_import(source):
     return getattr(mod, 'ETL')
 
 
+def process_etl(source: str, cmd_args: dict):
+    try:
+        ETL = dynamic_etl_import(source=source)
+    except ModuleNotFoundError:
+        logging.error(f"No Source with {source} exists.")
+        return
+    etl = ETL(allowed_threads=cmd_args["allowed_threads"],
+              chunk_size=cmd_args["chunk_size"],
+              is_dummy=cmd_args["mode"] != "run",
+              sftp_active=cmd_args["copy_to_sftp"])
+    etl.run()
+
+
 def main():
     cmd_args = parse_cmd_args()
     if not cmd_args["types"]:
         for source in SOURCES:
+
             ETL = dynamic_etl_import(source=source)
             etl = ETL(allowed_threads=cmd_args["allowed_threads"],
                       chunk_size=cmd_args["chunk_size"],
-                      is_dummy=cmd_args["mode"] != "run"
-                      )
+                      is_dummy=cmd_args["mode"] != "run")
             etl.run()
     else:
         for source in cmd_args["types"].split(","):
@@ -66,9 +88,14 @@ def main():
             if ETL:
                 etl = ETL(allowed_threads=cmd_args["allowed_threads"],
                           chunk_size=cmd_args["chunk_size"],
-                          is_dummy=cmd_args["mode"] != "run"
-                          )
+                          is_dummy=cmd_args["mode"] != "run")
                 etl.run()
+
+            process_etl(source=source, cmd_args=cmd_args)
+    else:
+        for source in cmd_args["types"].split(","):
+            process_etl(source=source, cmd_args=cmd_args)
+
 
 
 if __name__ == "__main__":
