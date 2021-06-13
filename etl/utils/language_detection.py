@@ -8,10 +8,9 @@ from langdetect.lang_detect_exception import LangDetectException
 from typing import List
 from nltk import word_tokenize
 from nltk.stem.lancaster import LancasterStemmer
-import configs
 
-
-from configs.settings import LANGUAGE_PROPABILITY_TRESHOLD
+from configs.settings import LANGUAGE_PROPABILITY_TRESHOLD, LANGUAGE_DETECTION_REQUIRED, \
+    STEMMING_REQUIRED
 
 
 def get_tokens_from_pattern(pattern: str) -> List[str]:
@@ -47,7 +46,7 @@ def set_not_english_columns_to_null(df):
 
         if is_en:
             try:
-                if configs.STEMMING_REQUIRED:
+                if STEMMING_REQUIRED:
                     header = " ".join(get_tokens_from_pattern(pattern=row["header"]))
                     body = " ".join(get_tokens_from_pattern(pattern=row["body"]))
                 else:
@@ -59,6 +58,6 @@ def set_not_english_columns_to_null(df):
 
         return pd.Series([np.nan, np.nan])
 
-    if configs.LANGUAGE_DETECTION_REQUIRED:
+    if LANGUAGE_DETECTION_REQUIRED:
         df[["header", "body"]] = df.apply(text_cleanup, axis=1)
     return
