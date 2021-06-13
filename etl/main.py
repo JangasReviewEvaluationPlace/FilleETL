@@ -20,7 +20,7 @@ def parse_cmd_args() -> dict:
               "Take a look into documentation for more info."),
     )
     parser.add_argument(
-        "--types",
+        "--sources",
         help=("Commaseparated List of sources which should be included "
               "in etl process. If empty all known sources will be "
               "included.")
@@ -70,11 +70,11 @@ def process_etl(source: str, cmd_args: dict):
 
 def main():
     cmd_args = parse_cmd_args()
-    if not cmd_args["types"]:
+    if not cmd_args["sources"]:
         for source in SOURCES:
             process_etl(source=source, cmd_args=cmd_args)
     else:
-        for source in cmd_args["types"].split(","):
+        for source in cmd_args["sources"].split(","):
             process_etl(source=source, cmd_args=cmd_args)
 
 

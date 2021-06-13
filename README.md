@@ -18,7 +18,69 @@ There are different setup options:
     the generalized data should be proceed into a database)
 
 ### Setup
-<!-- TODO -->
+
+**Docker**
+In this repository are two docker-compositions included:
+- docker-compose
+- docker-compose-sampleset
+
+The sampleset will use the prepared sample data for ETL process.
+The usual dockerfile will try to put the real data (if provided)
+into the pipeline.
+
+**Python**
+1. Create & activate a virtual environment (optional but highly
+    recommended)
+```
+virtualenv venv
+source venv/bin/activate
+```
+
+2. install requirements
+```
+poetry install
+```
+if you are not using poetry, you can use aby package manager by
+installing the requirements. e.g.
+```
+pip install -r requirements.txt
+```
+
+3. start the application
+```
+python etl/main.py <run mode> \
+    [:optional --sources] \
+    [:optional --allowed-threads] \
+    [:optional --chunk-size] \
+    [:optional --copy-to-sftp]
+```
+- run mode: `run` for running the application in production, `demo`
+    for running the application for test purposes
+- sources [`str`]: comma separated list of sources you want to put in
+    the etl. if not set: all sources will be executed
+- allowed-threads [`int`]: number of threads which should be parallelized
+    if not set: one thread is in used
+- chunk-size [`int`]: size of chunks which are read from dataset
+    if not set: full dataset will be loaded at once
+- copy-to-sftp [`bool`]: if True: data will be copied to external server
+    if not set: False per default
+
+## General
+For running this script, you need to have some infos in mind:
+
+### Prepare data for your etl processes
+Each etl process should contain a directory called `data` with real
+data to proceed. This Repository provides a small dataset for test
+purposes which you can execute in `demo` mode.
+
+### Server
+`pysftp` is used for copying the output to an additional server. Make
+sure this server is running if you like to copy the created data into
+it.
+
+### Kafka
+Apache Kafka is not part of this repository. This repository is a
+microservice which is usable without Kafka & SFTP.
 
 ## Output
 - `source` - where does the data comes from
@@ -26,6 +88,7 @@ There are different setup options:
 - `header` - short header of review [`default: ""`]
 - `body` - body of review
 - `is_streaming` - boolean for logical purposes inside of Kafka
+- `language` - language code for text - currently only english
 
 ## Sources
 - [Amazon Review Dataset](https://drive.google.com/drive/folders/0Bz8a_Dbh9Qhbfll6bVpmNUtUcFdjYmF2SEpmZUZUcVNiMUw1TWN6RDV3a0JHT3kxLVhVR2M?resourcekey=0-TLwzfR2O-D2aPitmn5o9VQ)
@@ -42,3 +105,17 @@ of that project without rerunning the whole ETL process which might
 take some time to proceed. Another use case could be that the data
 simply needs to get reproceeded at some point and we might not run
 the whole ETL process again.
+
+## Known Bugs
+1. **Threading & Chunking**
+
+The source data will be read in chunks if `chunk-size` is set. This
+allows to parallelize the etl and allows to read datasets which are
+greater than the local RAM. The chunks are realized via generator
+function. The bug comes with multi threading:
+
+If threading is greater than 1, the chunks are still realized by
+generator function but the full dataset will be loaded at once.
+
+2. **CMD Parameter `copy-to-sftp`**
+It will be always interpret as `True` if set and `False` if not.
