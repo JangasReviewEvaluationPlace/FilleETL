@@ -72,10 +72,30 @@ def main():
     cmd_args = parse_cmd_args()
     if not cmd_args["types"]:
         for source in SOURCES:
+
+            ETL = dynamic_etl_import(source=source)
+            etl = ETL(allowed_threads=cmd_args["allowed_threads"],
+                      chunk_size=cmd_args["chunk_size"],
+                      is_dummy=cmd_args["mode"] != "run")
+            etl.run()
+    else:
+        for source in cmd_args["types"].split(","):
+            try:
+                ETL = dynamic_etl_import(source=source)
+            except ModuleNotFoundError:
+                logging.error(f"No Source with {source} exists.")
+                continue
+            if ETL:
+                etl = ETL(allowed_threads=cmd_args["allowed_threads"],
+                          chunk_size=cmd_args["chunk_size"],
+                          is_dummy=cmd_args["mode"] != "run")
+                etl.run()
+
             process_etl(source=source, cmd_args=cmd_args)
     else:
         for source in cmd_args["types"].split(","):
             process_etl(source=source, cmd_args=cmd_args)
+
 
 
 if __name__ == "__main__":

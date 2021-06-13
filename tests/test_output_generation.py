@@ -37,4 +37,4 @@ class TestCSVOutputs:
         etl.sample_data_dir = os.path.join(FILE_DIRE, "fixtures", "sample_data", "amazon_reviews")
         self.cleanup_output_directory(etl=etl)
         etl.run()
-        assert True
+        assert True # nothing happens
