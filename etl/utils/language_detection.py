@@ -45,9 +45,12 @@ def set_not_english_columns_to_null(df):
                 break
 
         if is_en:
-            header = " ".join(get_tokens_from_pattern(pattern=row["header"]))
-            body = " ".join(get_tokens_from_pattern(pattern=row["body"]))
-            return pd.Series([header, body])
+            try:
+                header = " ".join(get_tokens_from_pattern(pattern=row["header"]))
+                body = " ".join(get_tokens_from_pattern(pattern=row["body"]))
+                return pd.Series([header, body])
+            except Exception as e:
+                logging.error("Uncatched exception in language detection.", e)
 
         return pd.Series([np.nan, np.nan])
 
