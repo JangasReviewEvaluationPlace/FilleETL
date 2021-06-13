@@ -1,5 +1,7 @@
 # File ETL - Readme
 
+![project architecture](Archtiecture-FileETL.jpg "Project Architecture")
+
 It's a Python based repository for an ETL to proceed data from files,
 unify format through different file sources and send them to an
 Apache Kafka broker for getting proceed for different usecases.
