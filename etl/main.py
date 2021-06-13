@@ -53,7 +53,8 @@ def main():
             ETL = dynamic_etl_import(source=source)
             etl = ETL(allowed_threads=cmd_args["allowed_threads"],
                       chunk_size=cmd_args["chunk_size"],
-                      is_dummy=cmd_args["mode"] != "run")
+                      is_dummy=cmd_args["mode"] != "run"
+                      )
             etl.run()
     else:
         for source in cmd_args["types"].split(","):
@@ -65,7 +66,8 @@ def main():
             if ETL:
                 etl = ETL(allowed_threads=cmd_args["allowed_threads"],
                           chunk_size=cmd_args["chunk_size"],
-                          is_dummy=cmd_args["mode"] != "run")
+                          is_dummy=cmd_args["mode"] != "run"
+                          )
                 etl.run()
 
 

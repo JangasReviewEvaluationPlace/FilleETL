@@ -23,17 +23,26 @@ class ETL(BaseETL):
             if csv_file.endswith(".csv")
         ]
 
-    def _extract(self, is_dummy: bool) -> Generator[pd.DataFrame, None, None]:
+    def _extract(self) -> Generator[pd.DataFrame, None, None]:
         # convert files with pd
         csv_files = self.__get_csv_files(is_dummy=is_dummy)
         # Read the source data from sample data directory
         column_names = ('rating', 'header', 'body')
         for csv_file in csv_files:
-            self.__csv_file_name = os.path.basename(csv_file)
-            df = df_reader()
-            df_reader = partial(pd.read_csv, csv_file, names=column_names, header=None)
-            yield df
-        print(csv_file)
+            try:
+                self.__csv_file_name = os.path.basename(csv_file)
+                df = df_reader()
+                df_reader = partial(pd.read_csv, csv_file, names=column_names, header=None)
+                yield df
+            except TypeError:
+                print("missing positional argument: 'is_dummy'")
+            print(csv_file)
+
+
+    def __set_type(self, df: pd.DataFrame):
+        df.loc[df["rating"] > 5, "type"] = 'positive'
+        df.loc[df["rating"] <= 5, "type"] = 'negative'
+
 
     def _transform(self):
         # Transform self.df to required output format
@@ -44,4 +53,5 @@ class ETL(BaseETL):
         pass
 
     def run(self):
+
         self.run_etl()
